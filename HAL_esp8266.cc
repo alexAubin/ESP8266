@@ -6,32 +6,104 @@ SoftwareSerial dbgSerial(2,3);
 // ######################################################################################
 
 bool esp8266_reset()
-{ 
+{
     #ifdef DEBUG
         DEBUG_Serial.println("Resetting ESP8266");
     #endif
-    return esp8266_sendCommand("AT+RST","ready",true, 2000); 
+    bool ready = false;
+    while (!ready)
+    {
+        ready = esp8266_sendCommand("AT+RST","ready", 2000);
+    }
+
+    return true;
 }
 
-bool esp8266_check()  
-{ return esp8266_sendCommand("AT",                      "OK",  true,  500); }
+bool esp8266_check()
+{ return esp8266_sendCommand("AT",                      "OK",  500); }
 
-bool esp8266_setMode(int mode)    
-{ return esp8266_sendCommand("AT+CWMODE="+String(mode), "OK", false, 1000); }
+bool esp8266_setMode(int mode)
+{ return esp8266_sendCommand("AT+CWMODE="+String(mode), "OK", 1000); }
 
-bool esp8266_listNetworks()     
-{ return esp8266_sendCommand("AT+CWLAP",                "OK", false, 20000); }
+bool esp8266_listNetworks()
+{ return esp8266_sendCommand("AT+CWLAP",                "OK", 20000); }
 
-bool esp8266_resetConnection()  
-{ return esp8266_sendCommand("AT+CWJAP=\"\",\"\"",      "OK", false, 1000); }
+bool esp8266_resetNetworkCredentials()
+{ return esp8266_sendCommand("AT+CWJAP=\"\",\"\"",      "OK", 1000); }
 
-bool esp8266_connect()          
-{ return esp8266_sendCommand(String("")+"AT+CWJAP=\""+SSID+"\",\""+PASS+"\"","OK", false, 1000); }
+bool esp8266_setNetworkCredentials()
+{ return esp8266_sendCommand(String("")+"AT+CWJAP=\""+ESP8266_SSID+"\",\""+ESP8266_PASS+"\"","OK", 8000); }
 
-bool esp8266_checkIP()          
-{ return esp8266_sendCommand("AT+CIFSR",                "OK", false, 2000); }
+bool esp8266_checkIP()  
+{ return esp8266_sendCommand("AT+CIFSR",                "APIP", 500); }
 
 // ######################################################################################
+
+bool esp8266_testGetRequest()
+{
+    bool test;
+
+    // Set mode for multiple connections
+    test = esp8266_sendCommand("AT+CIPMUX=0", "OK", 500);
+    if (!test) return false;
+    // Start connection
+    String cmd = String("")+"AT+CIPSTART=\"TCP\",\""+ESP8266_TEST_IP+"\",80";
+    test = esp8266_sendCommand(cmd, "OK", 2000);
+    if (!test) return false;
+    
+    // Start request sending
+    cmd = String()+ESP8266_TEST_GETREQUEST+"\r\n\r\n";
+    test = esp8266_sendCommand("AT+CIPSEND="+String(cmd.length()), ">", 500);
+    if (!test) return false;
+    
+    // Actually send request
+    test = esp8266_sendCommand(cmd, "+IPD", 10000);
+    if (!test) return false;
+
+    return true;
+}
+
+bool esp8266_testPostRequest()
+{
+    bool test;
+
+    // Set mode for multiple connections
+    test = esp8266_sendCommand("AT+CIPMUX=0", "OK", 500);
+    if (!test) return false;
+    // Start connection
+    String cmd = String("")+"AT+CIPSTART=\"TCP\",\""+ESP8266_TEST_IP+"\",80";
+    test = esp8266_sendCommand(cmd, "OK", 2000);
+    if (!test) return false;
+    
+    // Start request sending
+    cmd = String()+ESP8266_TEST_POSTREQUEST+"\r\n\r\n";
+    test = esp8266_sendCommand("AT+CIPSEND="+String(cmd.length()), ">", 500);
+    if (!test) return false;
+    
+    // Actually send request
+    test = esp8266_sendCommand(cmd, "+IPD", 10000);
+    if (!test) return false;
+
+    return true;
+}
+
+
+
+// ######################################################################################
+
+bool esp8266_connect()
+{
+
+    esp8266_setNetworkCredentials();
+
+    while (!esp8266_checkIP())
+    {
+        delay(1000);
+    }
+
+    return true;
+
+}
 
 void esp8266_init()
 {
@@ -58,7 +130,7 @@ void esp8266_init()
 //  Send a command to the ESP8266, check (or not) that the response contains a keyword,
 //  if not, halt the duino.
 // #####################################################################################
-bool esp8266_sendCommand(String command, String acknowledge_keyword, bool halt_on_fail, int timeout)
+bool esp8266_sendCommand(String command, String acknowledge_keyword, int timeout)
 {
     // Sending command
 
@@ -97,9 +169,7 @@ bool esp8266_sendCommand(String command, String acknowledge_keyword, bool halt_o
         bool ack = esp8266_acknowledge(response,acknowledge_keyword);
         // If ack is okay, return true
         if (ack) return true;
-        // Else return false (or completely halt arduino if halt_on_fail)
-        if (halt_on_fail) esp8266_halt("Critical command failed");
-        return false;
+        else     return false;
     }
 }
 
@@ -118,29 +188,4 @@ bool esp8266_acknowledge(String response, String keyword)
     if (foundpos == -1) return false;
     else return true;
 }
-
-// #####################################################################################
-
-void esp8266_halt(String msg)
-{
-    #ifdef DEBUG
-        DEBUG_Serial.println(msg);
-        DEBUG_Serial.println("HALT");
-    #endif
-
-    delay(5000);
-
-    #ifdef DEBUG
-        DEBUG_Serial.println("Attempting reinit");
-    #endif
-
-    esp8266_reset();
-    while(true)
-    {
-        esp8266_sendCommand("AT",     "OK",  true,  500);
-        break;
-    };
-}
-
-
 

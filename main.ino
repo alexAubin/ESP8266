@@ -5,62 +5,30 @@ String sendData(String command, const int timeout, boolean debug);
 
 void setup()
 {
+
+    // Init serial connections, reset module and check it is ready
     esp8266_init();
+
+    // Set mode to both Sta and AP 
+    // (whatever that means, I'm not networking expert, but it works)
     esp8266_setMode(3);
+    
+    // For debug : print list of networks
     //esp8266_listNetworks();
+    
+    // Connect to the network
     esp8266_connect();
-    esp8266_checkIP();
+    
+    // Test with a GET request
+    //esp8266_testGetRequest();
+    
+    // Test with a POST request
+    // TODO / FIXME this does not work for me
+    esp8266_testPostRequest();
+
 }
  
 void loop()
 {
-  /*
-  if(Serial.available()) // check if the esp is sending a message 
-  {
-    
-    //while(esp8266.available())
-    //{
-      // The esp has data so display its output to the serial window 
-    //  char c = esp8266.read(); // read the next character.
-    //  Serial.write(c);
-    //}
-    
-    if (Serial.find("+IPD,"))
-    {
-     delay(1000);
- 
-     int connectionId = Serial.read()-48; // subtract 48 because the read() function returns 
-                                           // the ASCII decimal value and 0 (the first decimal number) starts at 48
-     
-     String webpage = "<h1>Hello</h1>&lth2>World!</h2><button>LED1</button>";
- 
-     String cipSend = "AT+CIPSEND=";
-     cipSend += connectionId;
-     cipSend += ",";
-     cipSend +=webpage.length();
-     cipSend +="\r\n";
-     
-     sendData(cipSend,1000,DEBUG);
-     sendData(webpage,1000,DEBUG);
-     
-     webpage="<button>LED2</button>";
-     
-     cipSend = "AT+CIPSEND=";
-     cipSend += connectionId;
-     cipSend += ",";
-     cipSend +=webpage.length();
-     cipSend +="\r\n";
-     
-     sendData(cipSend,1000,DEBUG);
-     sendData(webpage,1000,DEBUG);
- 
-     String closeCommand = "AT+CIPCLOSE="; 
-     closeCommand+=connectionId; // append connection id
-     closeCommand+="\r\n";
-     
-     sendData(closeCommand,3000,DEBUG);
-    }
-  }
-  */
 }
  

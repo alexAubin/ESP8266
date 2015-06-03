@@ -3,6 +3,16 @@ ESP8266
 
 Experimentation / implementation of an hardware abstraction layer for the [ESP8266 (Olimex version)](https://www.olimex.com/Products/IoT/MOD-WIFI-ESP8266/open-source-hardware).
 
+0. [Introduction](#Introduction)
+1. [General description of the module](#Description)
+2. [The firmware](#Firmware)
+3. [Interfacing with Arduino Uno](#InterfacingWithUno)
+4. [Commands format](#CommandsFormat)
+5. [Concrete example](#Example)
+6. [Hardware abstraction layer](#HAL)
+7. [Ressources, references](#References)
+
+<a name="Introduction"></a>
 Introduction
 ============
 
@@ -17,6 +27,7 @@ should be aware of. Additionnaly the related github project aims to provide a us
 library for the ESP8266 for it to be as easy to use as possible in the context of Arduino
 Uno based projects and sending POST/GET requests.
 
+<a name="Description"></a>
 General description of the module
 =================================
 
@@ -46,6 +57,7 @@ more than 200mA to operate (up to 1A ?). So far I was able to operate the module
 any need of an additional power stage, but that might also explain some of the instabilities
 encountered.
 
+<a name="Firmware"></a>
 The firmware
 ============
 
@@ -63,6 +75,7 @@ with the ESP8266 changes.
 Other threads over the Internets mention the SDK, which to my understanding is related to
 developping your own firmware but I'm not intersted in that here.
 
+<a name="InterfacingWithUno"></a>
 Interfacing with Arduino Uno
 ============================
 
@@ -78,16 +91,25 @@ with the baudrate of the ESP (115200). Therefore I went for this solution :
 
 ![Setup](doc/wiring.png)
 
+This may evolve if one is successful at upgrading the firmware and changing the default
+baud rate. Note that this configuration means that you will need to unplug your ESP each 
+time you want to reprogram your Arduino as it also happens using the pins 0 and 1. Hence, 
+a nice connector is recommended to easility unplug/replug the ESP when developping.
+
+<a name="CommandsFormat"></a>
 Commands format
 ===============
 
 Commands to the ESP8266 are sent using a format similar to other devices using TTL 
-communication, such as GSMs. The format is "AT+[command name]" or "AT+[command name]=[arguments]"
-if the command requires arguments. For instance, "AT+RST" will reset the module, then
-it will send a bunch of information and finish with "ready". At any moment, you may send
-simply "AT" to check the status of your device and it should answer something like "OK" 
-or "busy" depending on its status.
+communication, such as GSMs. The format is `AT+[command name]` or `AT+[command name]=[arguments]`
+if the command requires arguments. For instance, `AT+RST` will supposedly reset the module, 
+then it will send a bunch of information and finish with `ready`. At any moment, you may 
+send simply `AT` to check the status of your device and it should answer something like 
+`OK` or `busy` depending on its status.
 
+[Link to full list of commands goes here]
+
+<a name="Example"></a>
 Concrete example
 ================
 
@@ -133,11 +155,13 @@ bool ack = find(response,"ready");
 if (!ack) while (1) { }
 ```
 
+<a name="HAL"></a>
 Hardware abstraction layer
 ==========================
 
 Todo
 
+<a name="References"></a>
 Ressources, references
 ======================
 

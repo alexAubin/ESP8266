@@ -63,17 +63,18 @@ The firmware
 
 As mentionned, the firmware of the module can be upgraded provided that the GPIO and other
 pins are mapped appropriately and you've downloaded the appropriate tools. However I didn't 
-find any strong motivation at this point to upgrade it, except for the fact that one might
-be able to change the baud rate used for serial communication by the ESP8266. It might
-also be that if you're using a different firmware version, the format of the communication
-with the ESP8266 changes. 
+find any strong motivation at this point to upgrade it in my case, except for the fact that 
+one might be able to change the baud rate used for serial communication by the ESP8266. It 
+might also be that if you're using a different firmware version, the format of the 
+communication with the ESP8266 changes. 
 
 [Firmware version used when developping HAL goes here]
 
 [Links related to firmware upgrade goes here]
 
 Other threads over the Internets mention the SDK, which to my understanding is related to
-developping your own firmware but I'm not intersted in that here.
+developping your own firmware, possibly to create a standalone access point using simply
+the module + a battery (but I'm not intersted in that here).
 
 <a name="InterfacingWithUno"></a>
 Interfacing with Arduino Uno
@@ -95,6 +96,10 @@ This may evolve if one is successful at upgrading the firmware and changing the 
 baud rate. Note that this configuration means that you will need to unplug your ESP each 
 time you want to reprogram your Arduino as it also happens using the pins 0 and 1. Hence, 
 a nice connector is recommended to easility unplug/replug the ESP when developping.
+
+Finally, note that the wiring is just indicative on the sketch. If when debugging you can't
+see any messages, you might need to swap the RX/TX lines. You should be able to monitor
+what's happening in your Arduino by actually monitoring the USB of your FTDI.
 
 <a name="CommandsFormat"></a>
 Commands format

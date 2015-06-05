@@ -1,31 +1,22 @@
 #include <SoftwareSerial.h>
-#include "HAL_esp8266.h"
+#include "ESP8266.h"
 
 String sendData(String command, const int timeout, boolean debug);
 
+SoftwareSerial debugSerial(2,3);
+ESP8266        wifiModule(&debugSerial);
+
 void setup()
 {
+    Serial.begin(9600);
+ 
+    wifiModule.init((int) 115200);
 
-    // Init serial connections, reset module and check it is ready
-    esp8266_init();
+    wifiModule.connect("whatever","password");
+    
+    wifiModule.getRequest("1.2.3.4", "GET / HTTP/1.1\r\nHost: yourHostName.com");
 
-    // Set mode to both Sta and AP 
-    // (whatever that means, I'm not networking expert, but it works)
-    esp8266_setMode(3);
-    
-    // For debug : print list of networks
-    //esp8266_listNetworks();
-    
-    // Connect to the network
-    esp8266_connect();
-    
-    // Test with a GET request
-    //esp8266_testGetRequest();
-    
-    // Test with a POST request
-    // TODO / FIXME this does not work for me
-    esp8266_testPostRequest();
-
+    wifiModule.postRequest("1.2.3.4", "POST /page.php HTTP/1.1\r\nHost: yourHostName.info\r\nfield=whatever");
 }
  
 void loop()

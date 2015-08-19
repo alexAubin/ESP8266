@@ -61,20 +61,18 @@ encountered.
 The firmware
 ============
 
-As mentionned, the firmware of the module can be upgraded provided that the GPIO and other
-pins are mapped appropriately and you've downloaded the appropriate tools. However I didn't 
-find any strong motivation at this point to upgrade it in my case, except for the fact that 
-one might be able to change the baud rate used for serial communication by the ESP8266. It 
-might also be that if you're using a different firmware version, the format of the 
-communication with the ESP8266 changes. 
+The initial firmware you'll have on your ESP8266 is likely to be bugged, missing features,
+outdated or just inappropriate for what you want to do. The firmware of the module can be 
+upgraded provided that the GPIO and other pins are mapped appropriately and you've 
+downloaded the appropriate tools. I found it useful to upgrade to
+[the latest version (0.952) of AI-thinker](http://www.electrodragon.com/w/ESP8266_AT-command_firmware),
+using [esptool](https://github.com/themadinventor/esptool). In particular, in can be useful 
+to change the baudrate of the ESP to 9600 if you plan to use the SoftwareSerial of Arduino.
+I found that it also solved an inability of the previous firmware versions to connect to
+my freebox internet.
 
-[Firmware version used when developping HAL goes here]
-
-[Links related to firmware upgrade goes here]
-
-Other threads over the Internets mention the SDK, which to my understanding is related to
-developping your own firmware, possibly to create a standalone access point using simply
-the module + a battery (but I'm not intersted in that here).
+Alternatively, you may consider using NodeMCU (see [here](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_en) and [here](https://github.com/nodemcu/nodemcu-firmware/releases)) which lets you interact with the ESP with
+LUA commands instead of the AT+commands.
 
 <a name="InterfacingWithUno"></a>
 Interfacing with Arduino Uno
@@ -84,22 +82,20 @@ As mentionned, the module uses TTL serial communication. TTL serial capabilities
 natively by the Uno on the pin 0 and 1. However, as this is also a mean for debugging your
 project by writing messages and monitoring them on the Serial Monitor, you probably want
 to have two Serials at the same time. This is possible using the SerialSoftware library
-which can emulate TTL serial communication on other pins of your Uno. That's not the end
-of the story as in my case I was not able to get a stable connexion on a software serial
-with the baudrate of the ESP (115200). Therefore I went for this solution :
+which can emulate TTL serial communication on other pins of your Uno. Howevern if you want 
+to have a baudrate higher than 9600 for the ESP, you won't be able to use the SerialSoftware.
+You will instead need to use the HardwareSerial (pin 0 and 1) and debug through the SerialSoftware :
 - pins 0 and 1, i.e. native Uno serial, are used for communicating with the ESP
 - pins 2 and 3 are used via a software serial and interfaced with your laptop via a FTDI chip (USB <-> TTL)
 
 ![Setup](doc/wiring.png)
 
-This may evolve if one is successful at upgrading the firmware and changing the default
-baud rate. Note that this configuration means that you will need to unplug your ESP each 
-time you want to reprogram your Arduino as it also happens using the pins 0 and 1. Hence, 
-a nice connector is recommended to easility unplug/replug the ESP when developping.
+Note that this configuration means that you will need to unplug your ESP each 
+time you want to reprogram your Arduino as it also happens using the pins 0 and 1.
 
-Finally, note that the wiring is just indicative on the sketch. If when debugging you can't
-see any messages, you might need to swap the RX/TX lines. You should be able to monitor
-what's happening in your Arduino by actually monitoring the USB of your FTDI.
+However if you changed the baudrate to 9600 or lower with whichever new firmware, then you can
+simply use pin 2 and 3 to connect the ESP, and debug through the usual pin 0 and 1 (i.e.,
+no FTDI needed).
 
 <a name="CommandsFormat"></a>
 Commands format

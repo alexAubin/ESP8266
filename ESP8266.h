@@ -5,15 +5,14 @@ class ESP8266
 {
     public :
 
-        ESP8266(SoftwareSerial* debugStream_ = 0);
+        ESP8266(HardwareSerial* debugStream_ = 0);
 
         ~ESP8266() { };
 
-        bool init(int baudRate);
+        bool init(long baudRate);
         bool connect(String SSID, String password);
         bool listNetworks();
-        bool getRequest(String ip, String request);
-        bool postRequest(String ip, String request);
+        bool getRequest(String ip, String page, String arguments = "");
 
     private :
 
@@ -27,8 +26,8 @@ class ESP8266
         bool checkIP();
         bool acknowledge(String response, String keyword);
 
-        SoftwareSerial* debugStream;
-        HardwareSerial* moduleStream;
+        HardwareSerial* debugStream;
+        SoftwareSerial* moduleStream;
 
 };
 

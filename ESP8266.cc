@@ -4,10 +4,12 @@
 // #  Construct a ESP8266 module instance, with possibly a debug stream                 #
 // ######################################################################################
 
-ESP8266::ESP8266(SoftwareSerial* debugStream_)
+
+SoftwareSerial ESPSerial(2,3);
+ESP8266::ESP8266(HardwareSerial* debugStream_)
 {
     debugStream = debugStream_;      
-    moduleStream = &Serial;
+    moduleStream = &ESPSerial;
 }
 
 // ######################################################################################
@@ -15,13 +17,13 @@ ESP8266::ESP8266(SoftwareSerial* debugStream_)
 // #  making a general check of if the module is active and ready.                      #
 // ######################################################################################
 
-bool ESP8266::init(int baudRate)
+bool ESP8266::init(long baudRate)
 {
     if (debugStream)
         debugStream->println("Starting serial TTL for ESP8266 module");
     
     moduleStream->begin(baudRate);
- 
+
     bool test = false;
     test = reset();
     if (!test) return false;
@@ -176,43 +178,19 @@ bool ESP8266::checkIP()
 // #  Start a TCP connection and send a HTTP GET request                                #
 // ######################################################################################
 
-bool ESP8266::getRequest(String ip, String request)
+bool ESP8266::getRequest(String ip, String page, String arguments)
 {
+
+    String request = "GET /"+page;
+    if (arguments != "") request += "?"+arguments;
+    request += "\r\nHost: whatever.com\r\nConnection: Close";
+
     bool test;
 
     // Set mode for multiple connections
     test = sendCommand("AT+CIPMUX=0", "OK", 500);
     if (!test) return false;
 
-    // Start connection
-    String cmd = String("")+"AT+CIPSTART=\"TCP\",\""+ip+"\",80";
-    test = sendCommand(cmd, "OK", 2000);
-    if (!test) return false;
-    
-    // Start request sending
-    cmd = request+"\r\n\r\n";
-    test = sendCommand("AT+CIPSEND="+String(cmd.length()), ">", 500);
-    if (!test) return false;
-    
-    // Actually send request
-    test = sendCommand(cmd, "+IPD", 10000);
-    if (!test) return false;
-
-    return true;
-}
-
-// ######################################################################################
-// #  Start a TCP connection and send a HTTP POST request                               #
-// ######################################################################################
-
-bool ESP8266::postRequest(String ip, String request)
-{
-    bool test;
-
-    // Set mode for multiple connections
-    test = sendCommand("AT+CIPMUX=0", "OK", 500);
-    if (!test) return false;
-    
     // Start connection
     String cmd = String("")+"AT+CIPSTART=\"TCP\",\""+ip+"\",80";
     test = sendCommand(cmd, "OK", 2000);

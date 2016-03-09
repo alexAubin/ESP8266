@@ -12,11 +12,19 @@ class ESP8266
         bool init(long baudRate);
         bool connect(String SSID, String password);
         bool listNetworks();
-        bool getRequest(String ip, String page, String arguments = "");
+        bool getRequest(String ip,
+                        String host,
+                        String page,
+                        String* output = 0,
+                        String arguments = "");
 
+
+        bool sendCommand(String  command,
+                         String  acknowledge_keyword,
+                         int     timeout,
+                         String* output = 0,
+                         void    (*responseParser)(int, SoftwareSerial*, String*) = 0);
     private :
-
-        bool sendCommand(String command, String acknowledge_keyword, int timeout);
 
         bool reset();
         bool checkActiveAndReady();

@@ -8,7 +8,7 @@
 SoftwareSerial ESPSerial(2,3);
 ESP8266::ESP8266(HardwareSerial* debugStream_)
 {
-    debugStream = debugStream_;      
+    debugStream = debugStream_;
     moduleStream = &ESPSerial;
 }
 
@@ -20,17 +20,21 @@ ESP8266::ESP8266(HardwareSerial* debugStream_)
 bool ESP8266::init(long baudRate)
 {
     if (debugStream)
-        debugStream->println("Starting serial TTL for ESP8266 module");
-    
+        debugStream->println(F("Starting serial TTL for ESP8266 module"));
+
     moduleStream->begin(baudRate);
+
+    delay(1000);
 
     bool test = false;
     test = reset();
     if (!test) return false;
 
+    delay(1000);
+
     test = checkActiveAndReady();
     if (!test) return false;
-    
+
     return true;
 }
 
@@ -42,12 +46,12 @@ bool ESP8266::init(long baudRate)
 bool ESP8266::reset()
 {
     if (debugStream)
-        debugStream->println("Attempting to reset ESP8266");
+        debugStream->println(F("Attempting to reset ESP8266"));
 
     short int remainingAttempts = 3;
     while (remainingAttempts-- > 0)
     {
-        if (sendCommand("AT+RST","ready", 2000)) return true;
+        if (sendCommand("AT+RST","ready", 4000)) return true;
     }
 
     return false;
@@ -59,13 +63,17 @@ bool ESP8266::reset()
 // #  keyword, if not, halt the duino.                                                  #
 // #######################################################################################
 
-bool ESP8266::sendCommand(String command, String acknowledge_keyword, int timeout)
+bool ESP8266::sendCommand(String  command,
+                          String  acknowledge_keyword,
+                          int     timeout,
+                          String* output,
+                          void (*responseParser)(int,SoftwareSerial*, String*))
 {
     // Sending command
 
     if (debugStream)
     {
-        debugStream->println("---- Sending :");
+        debugStream->println(F("---- Sending :"));
         debugStream->println(command);
     }
 
@@ -75,17 +83,32 @@ bool ESP8266::sendCommand(String command, String acknowledge_keyword, int timeou
     // Getting response
 
     String response = "";
-    long deadline = millis() + timeout;
-    while (millis() < deadline)
-    if (moduleStream->available())
+
+    if (responseParser == 0)
     {
-        response += (char) moduleStream->read();
+        long deadline = millis() + timeout;
+
+        while (millis() < deadline)
+        if (moduleStream->available())
+        {
+            response += (char) moduleStream->read();
+        }
     }
+    else
+    {
+        responseParser(timeout,moduleStream,&response);
+    }
+
 
     if (debugStream)
     {
-        debugStream->println("---- Receiving :");
+        debugStream->println(F("---- Receiving :"));
         debugStream->println(response);
+    }
+
+    if (output != 0)
+    {
+        *output = response;
     }
 
     // If no ack response specified, skip all available module output.
@@ -127,16 +150,16 @@ bool ESP8266::acknowledge(String response, String keyword)
 // ######################################################################################
 
 bool ESP8266::checkActiveAndReady()
-{ 
+{
     if (debugStream)
-        debugStream->println("Checking module status");
+        debugStream->println(F("Checking module status"));
 
-    bool test = sendCommand("AT", "OK",  500); 
-    
+    bool test = sendCommand("AT", "OK",  500);
+
     if (debugStream)
     {
-        if (test) debugStream->println("Module is active and ready");
-        else      debugStream->println("Module is busy / not responding");
+        if (test) debugStream->println(F("Module is active and ready"));
+        else      debugStream->println(F("Module is busy / not responding"));
     }
 
     return test;
@@ -145,11 +168,11 @@ bool ESP8266::checkActiveAndReady()
 // ######################################################################################
 // #  Connect to the network given the SSID and password                                #
 // ######################################################################################
-        
+
 bool ESP8266::connect(String SSID, String password)
 {
     setWifiMode(3);
-    
+
     setNetworkCredentials(SSID,password);
 
     short int remainingAttempts = 10;
@@ -166,24 +189,62 @@ bool ESP8266::setWifiMode(int mode)
 
 bool ESP8266::setNetworkCredentials(String SSID, String password)
 {
-    return sendCommand(String("")+"AT+CWJAP=\""+SSID+"\",\""+password+"\"","OK", 5000); 
+    return sendCommand(String("")+"AT+CWJAP=\""+SSID+"\",\""+password+"\"","OK", 5000);
 }
 
 bool ESP8266::checkIP()
-{ 
-    return sendCommand("AT+CIFSR", "APIP", 500); 
+{
+    return sendCommand("AT+CIFSR", "APIP", 500);
 }
 
 // ######################################################################################
 // #  Start a TCP connection and send a HTTP GET request                                #
 // ######################################################################################
 
-bool ESP8266::getRequest(String ip, String page, String arguments)
+// This filter meant to be used during sendCommand filters out the header
+// received after the get request
+void getResponseFilter(int timeout, SoftwareSerial* moduleStream, String* response)
+{
+    int  buffIgnore = 300;
+    char previousChar = '0';
+    bool nowWeSave = false;
+
+    long deadline = millis() + timeout;
+    while (millis() < deadline)
+    if (moduleStream->available())
+    {
+        if (nowWeSave)
+        {
+            (*response) += (char) moduleStream->read();
+        }
+        else if (buffIgnore > 0)
+        {
+            buffIgnore--;
+            previousChar = moduleStream->read();
+        }
+        else
+        {
+            char c = moduleStream->read();
+            if ((previousChar == '\n') && (c == '\r'))
+            {
+                nowWeSave = true;
+            }
+            previousChar = c;
+        }
+    }
+
+}
+
+bool ESP8266::getRequest(String ip,
+                         String host,
+                         String page,
+                         String* output,
+                         String arguments)
 {
 
-    String request = "GET /"+page;
+    String request = "GET "+page+" HTTP/1.1";
     if (arguments != "") request += "?"+arguments;
-    request += "\r\nHost: whatever.com\r\nConnection: Close";
+    request += "\r\nHost: "+host+"\r\nConnection: close\r\n\r\n";
 
     bool test;
 
@@ -195,18 +256,19 @@ bool ESP8266::getRequest(String ip, String page, String arguments)
     String cmd = String("")+"AT+CIPSTART=\"TCP\",\""+ip+"\",80";
     test = sendCommand(cmd, "OK", 2000);
     if (!test) return false;
-    
+
     // Start request sending
     cmd = request+"\r\n\r\n";
     test = sendCommand("AT+CIPSEND="+String(cmd.length()), ">", 500);
     if (!test) return false;
-    
+
     // Actually send request
-    test = sendCommand(cmd, "+IPD", 10000);
+    test = sendCommand(cmd, "CLOSED", 10000,output,&getResponseFilter);
     if (!test) return false;
 
     return true;
 }
+
 
 // ######################################################################################
 
@@ -216,8 +278,8 @@ bool ESP8266::listNetworks()
 }
 
 bool ESP8266::resetNetworkCredentials()
-{ 
-    return sendCommand("AT+CWJAP=\"\",\"\"",      "OK", 1000); 
+{
+    return sendCommand("AT+CWJAP=\"\",\"\"",      "OK", 1000);
 }
 
 

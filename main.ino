@@ -7,20 +7,34 @@ ESP8266 wifiModule(&Serial);
 
 void setup()
 {
-    Serial.begin(9600);
+    Serial.begin(115200);
+
+    delay(1000);
 
     wifiModule.init(9600);
 
+    delay(1000);
+
     wifiModule.listNetworks();
 
-    wifiModule.connect("SSID","password");
+    delay(1000);
 
-    wifiModule.getRequest("1.2.3.4", "page.php", "argument=value&argument2=value2");
+    wifiModule.connect("yourNetwordSSID","yourNetworkPassword");
+
+    delay(1000);
 
 }
- 
+
 void loop()
 {
+    String output = "";
+
+    wifiModule.getRequest("111.222.333.444", "domainName.tld",
+                          "/some/uri", &output);
+
+    Serial.println(output);
+
+    delay(30000);
 }
 
 
